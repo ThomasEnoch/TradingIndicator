@@ -1,0 +1,159 @@
+//@version=5
+indicator("Confidence Interval Indicator (Phoenix Ascending Based)", overlay=true)
+
+// Inputs
+n1 = input.int(9, "Phx Master")       // For TCI and TSI calculations
+n2 = input.int(6, "Phx Time 1")       // For Willy calculation
+n3 = input.int(3, "Phx Time 2")       // For MF calculation
+n4 = input.int(32, "LSMA Length")     // For LSMA calculation
+n5 = input.int(0, "LSMA Offset")      // LSMA Offset (usually 0)
+length_rsi = input.int(14, "RSI Length for CSI")
+
+// Stochastic RSI Inputs
+show_stoch_rsi = input.bool(false, "Show Stochastic RSI")
+length_stoch_rsi = input.int(14, "Stochastic RSI Length", minval=1)
+smooth_k = input.int(3, "Stochastic %K Smoothing", minval=1)
+smooth_d = input.int(3, "Stochastic %D Smoothing", minval=1)
+
+// Functions
+
+// TCI Function
+tci(src, length) =>
+    ema1 = ta.ema(src, length)
+    ema2 = ta.ema(math.abs(src - ema1), length)
+    ci = (src - ema1) / (0.025 * ema2 + 1e-10)
+    tci = ta.ema(ci, length) + 50
+    tci
+
+// MF (Money Flow) Function
+mf(src, length) =>
+    vol = volume
+    up_vol = request.security(syminfo.tickerid, timeframe.period, vol * (ta.change(src) > 0 ? src : 0))
+    down_vol = request.security(syminfo.tickerid, timeframe.period, vol * (ta.change(src) < 0 ? src : 0))
+    up_sum = ta.sma(up_vol, length)
+    down_sum = ta.sma(down_vol, length)
+    mf = 100 * up_sum / (up_sum + down_sum + 1e-10)
+    mf
+
+// Willy Function
+willy(src, length) =>
+    highest_high = ta.highest(src, length)
+    lowest_low = ta.lowest(src, length)
+    willy = 60 * (src - highest_high) / (highest_high - lowest_low + 1e-10) + 80
+    willy
+
+// CSI Function
+csi(src, length_rsi) =>
+    rsi_val = ta.rsi(src, length_rsi)
+    tsi_val = ta.tsi(src, length_rsi, length_rsi) * 50 + 50
+    csi = (rsi_val + tsi_val) / 2
+    csi
+
+// Tradition Indicator
+tradition(src) =>
+    tci_val = tci(src, n1)
+    mf_val = mf(src, n3)
+    rsi_val = ta.rsi(src, n3)
+    tradition = (tci_val + mf_val + rsi_val) / 3
+    tradition
+
+// Stochastic RSI Calculation
+stochastic_rsi(src, rsi_length, stoch_length, smooth_k, smooth_d) =>
+    rsi_val = ta.rsi(src, rsi_length)
+    stoch_k = ta.sma(ta.stoch(rsi_val, rsi_val, rsi_val, stoch_length), smooth_k) * 100
+    stoch_d = ta.sma(stoch_k, smooth_d)
+    [stoch_k, stoch_d]
+
+// Calculations
+
+// Calculate the Tradition Indicator
+wt1 = tradition(hlc3) 
+
+// Smooth the Tradition Indicator
+wt2 = ta.sma(wt1, n2)
+
+// LSMA of the Tradition Indicator
+wt3 = ta.linreg(wt1, n4, n5)
+
+// Energy Line
+wt4 = ta.ema((wt1 - wt2) * 2 + 50, n3)
+
+// Stochastic RSI (Optional)
+[k, d] = stochastic_rsi(close, length_rsi, length_stoch_rsi, smooth_k, smooth_d)
+
+// Conditions
+overbought_level = 80
+oversold_level = 20
+
+bullish_cross = ta.crossover(wt1, wt2)
+bearish_cross = ta.crossunder(wt1, wt2)
+
+lsma_bullish = wt1 > wt3
+lsma_bearish = wt1 < wt3
+
+energy_bullish = wt4 > 50
+energy_bearish = wt4 < 50
+
+tradition_oversold = wt1 <= oversold_level
+tradition_overbought = wt1 >= overbought_level
+
+stochrsi_overbought = show_stoch_rsi and k >= 75
+stochrsi_oversold = show_stoch_rsi and k <= 25
+
+// Confidence Score Calculation
+var float confidence_score = 50.0
+confidence_score := 50.0
+
+if bullish_cross
+    confidence_score += 15
+if bearish_cross
+    confidence_score -= 10
+if lsma_bullish
+    confidence_score += 25
+if lsma_bearish
+    confidence_score -= 25
+if energy_bullish
+    confidence_score += 5
+if energy_bearish
+    confidence_score -= 5
+if tradition_oversold
+    confidence_score += 5
+if tradition_overbought
+    confidence_score -= 5
+if stochrsi_oversold
+    confidence_score += 5
+if stochrsi_overbought
+    confidence_score -= 5
+
+// Ensure Confidence Score is between 0 and 100
+confidence_score := math.max(math.min(confidence_score, 100), 0)
+
+// Define Color Based on Confidence Score
+conf_color = confidence_score >= 70 ? color.green : confidence_score <= 30 ? color.red : color.yellow
+
+// Plot Confidence Score
+//plot(confidence_score, title="Confidence Score", color=conf_color, linewidth=2)
+//hline(70, title="Buy Threshold", color=color.gray, linestyle=hline.style_dashed)
+//hline(30, title="Sell Threshold", color=color.gray, linestyle=hline.style_dashed)
+
+// Buy and Sell Signals
+buy_signal = confidence_score >= 90
+sell_signal = confidence_score <= 10
+
+// Plotting Arrows on Chart
+plotshape(buy_signal, title="Buy Signal", style=shape.arrowup, location=location.belowbar, color=color.green, size=size.small)
+plotshape(sell_signal, title="Sell Signal", style=shape.arrowdown, location=location.abovebar, color=color.red, size=size.small)
+
+// Plot Tradition Indicator and its SMA
+//plot(wt1, title="Tradition Indicator", color=color.green, linewidth=2)
+//plot(wt2, title="Tradition SMA", color=color.red, linewidth=2)
+
+// Plot LSMA
+//plot(wt3, title="LSMA", color=color.blue, linewidth=2)
+
+// Plot Energy Line
+//plot(wt4, title="Energy Line", color=color.white, style=plot.style_area, transp=65, histbase=50)
+
+// Plot Stochastic RSI (Optional)
+//plot(show_stoch_rsi ? k : na, title="%K", color=color.yellow)
+//plot(show_stoch_rsi ? d : na, title="%D", color= color.fuchsia)
