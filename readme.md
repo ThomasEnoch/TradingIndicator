@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Phoenix Confidence Indicator** is a comprehensive trading tool designed to help traders identify market trends, reversals, and momentum. Based on the renowned Phoenix Ascending methodology, this indicator combines multiple technical analysis components into a single, actionable confidence score. It provides clear visual cues for potential buy and sell signals directly on the chart, making it an essential tool for traders of all levels.
+The **Phoenix Confidence Indicator** is a comprehensive trading tool designed to help traders identify market trends, reversals, and momentum. Based on the renowned Phoenix Ascending methodology, this indicator combines multiple technical analysis components into a single, actionable confidence score. It provides clear visual cues for potential buy and sell signals directly on the chart, making it an essential tool for traders of all levels. (Note: I have commented out all plotted lines and indicators other than the buy and sell arrows)
 
 ## Key Features
 
@@ -39,8 +39,8 @@ The **Phoenix Confidence Indicator** is a comprehensive trading tool designed to
     - **≤ 30**: Bearish (strong sell conditions).
     - **30-70**: Neutral or no clear trend.
 - **Buy/Sell Arrows**:
-  - **Green Arrow**: Potential buy signal (score ≥ 85).
-  - **Red Arrow**: Potential sell signal (score ≤ 15).
+  - **Green Arrow**: Potential buy signal (score ≥ 90).
+  - **Red Arrow**: Potential sell signal (score ≤ 10).
 
 ### 3. **Customization**
 The indicator includes several adjustable inputs for personalization:
@@ -67,9 +67,7 @@ The indicator includes several adjustable inputs for personalization:
 ## Example Chart
 
 Here’s an example of how the Phoenix Confidence Indicator looks in action:
-
-![Phoenix Confidence Indicator Example](https://your-image-link-here)  
-*(Replace with a screenshot of the indicator applied to a chart)*
+![image](https://github.com/user-attachments/assets/ce07cfa1-ff0b-4613-a937-4d5cc95fb6d1)
 
 ---
 
